@@ -1,3 +1,4 @@
+import pygame
 import pygame as p
 from time import sleep
 from random import randint
@@ -9,11 +10,17 @@ class Game:
         self.fps = p.time.Clock()
         p.display.set_caption("Simple 2d Game")
         self.state = 1
+        self.crosshair = p.image.load("resource/cr.png")
+        self.crosshairBox = self.crosshair.get_rect()
         self.manche = 1
         self.ennemiList = []
+        self.ennemiHitBox = []
+        self.mouseX = 0
+        self.mouseY = 0
         self.screen = p.display.set_mode((720,480))
         self.player = Player()
     def keyEvent(self):
+        self.player.doDammage(self.ennemiHitBox)
         limitWidth = self.screen.get_width()
         limitHeight = self.screen.get_height()
         keys = p.key.get_pressed()
@@ -36,12 +43,12 @@ class Game:
             self.player.velocityX = 1
         else:
             self.player.velocityX = 0
-
     def spawnBot(self,n):
         width = self.screen.get_width()
         height = self.screen.get_height()
         ### bot making
-        nbrEnnemi = len(self.ennemiList);
+        nbrEnnemi = len(self.ennemiList)
+
         if nbrEnnemi <= 0:
             for x in range(n):
                 randomX = randint(20, width - 20)
@@ -49,25 +56,40 @@ class Game:
                 n = Bot()
                 n.hitBox.centerx = randomX
                 n.hitBox.centery = randomY
+                ### BotFamily
+                self.ennemiHitBox.append(n.hitBox)
                 self.ennemiList.append(n)
-        ### bot spawning
+                self.manche += 1
+        ### bot spawning + move
         else:
             for bot in self.ennemiList:
-                bot.draw(self.screen)
+                if bot.isAlive:
+                    bot.draw(self.screen)
+                    bot.chase(self.player)
+                    bot.checkCollision(self.ennemiHitBox)
+                    bot.checkCollisionToPlayer(self.player)
+                    bot.move()
 
-
-
+                else:
+                    self.ennemiList.remove(bot)
+                    self.ennemiHitBox.remove(bot.hitBox)
+                    del bot
 
     def drawScreen(self):
         self.screen.fill((0,0,0))
+
         self.player.draw(self.screen)
         self.player.move()
-        self.spawnBot(5)
-
-
+        self.spawnBot(6)
+        self.screen.blit(self.crosshair, self.crosshairBox)
 
     def updateScreen(self):
         p.display.flip()
+        self.mouseX = p.mouse.get_pos()[0]
+        self.mouseY = p.mouse.get_pos()[1]
+        self.crosshairBox.centerx = self.mouseX
+        self.crosshairBox.centery = self.mouseY
+        p.mouse.set_visible(False)
         self.fps.tick(60)
 
     def start(self):
@@ -82,6 +104,8 @@ class Game:
             self.drawScreen()
             self.updateScreen()
 
+pygame.init()
+pygame.mixer.init()
 
 game = Game()
 game.start()
