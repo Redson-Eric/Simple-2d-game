@@ -10,8 +10,7 @@ class Player:
         self.velocityX = 0
         self.velocityY = 0
         
-        # FIXME: self.hp = 20
-        self.hp = 20000000000000000000000000000000    # Player health
+        self.hp = 20    # Player health
         self.speed = 3
         self.isAlive = True
         self._angle = 0.0
@@ -21,7 +20,6 @@ class Player:
         #self.image = rotateImage
         rotated_image = p.transform.rotate(self.image, self.angle)
         surface.blit(rotated_image, self.hitBox)
-
 
     def checkIfAlive(self):
         if self.hp <=0:

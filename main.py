@@ -61,17 +61,17 @@ class Game:
         playerBottom = self.player.hitBox.bottom
 
         #### Y
-        if keys[p.K_z] and playerTop>0:
+        if (keys[p.K_z] or keys[p.K_UP]) and playerTop>0:
             self.player.velocityY = -1
-        elif keys[p.K_s] and playerBottom<limitHeight:
+        elif (keys[p.K_s] or keys[p.K_DOWN]) and playerBottom<limitHeight:
             self.player.velocityY = 1
         else:
             self.player.velocityY = 0
 
         #########X
-        if keys[p.K_q] and playerLeft>0:
+        if (keys[p.K_q] or keys[p.K_LEFT]) and playerLeft>0:
             self.player.velocityX = -1
-        elif keys[p.K_d] and playerRight<limitWidth:
+        elif (keys[p.K_d] or keys[p.K_RIGHT]) and playerRight<limitWidth:
             self.player.velocityX = 1
         else:
             self.player.velocityX = 0
