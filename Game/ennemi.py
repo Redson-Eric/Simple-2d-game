@@ -10,7 +10,7 @@ class Bot:
         self.velocityY = 0
         self.lastX = 0
         self.lastY = 0
-        self.speed = 2
+        self.speed = 1
         self.hp = 10
         self.damage = 10
 

@@ -7,11 +7,14 @@ class Player:
         self.soundHurt = p.mixer.Sound("sound/playerHurt.mp3")
         self.velocityX = 0
         self.velocityY = 0
-        self.hp = 100
+        self.hp = 20
         self.speed = 3
+        self.angle = 0.0
         self.isAlive = True
 
     def draw(self, surface):
+        #rotateImage = p.transform.rotate(self.image, 90)
+        #self.image = rotateImage
         surface.blit(self.image, self.hitBox)
 
     def checkIfAlive(self):
