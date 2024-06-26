@@ -10,7 +10,8 @@ class Player:
         self.velocityX = 0
         self.velocityY = 0
         
-        self.hp = 20    # Player health
+        # FIXME: self.hp = 20
+        self.hp = 20000000000000000000000000000000    # Player health
         self.speed = 3
         self.isAlive = True
         self._angle = 0.0
@@ -35,7 +36,6 @@ class Player:
         for x in ennemiList:
             if self.hitBox.colliderect(x):
                 self.soundHurt.play()
-                print(f"{self.hp}") # debuging for player health ????
             else:
                 pass
 

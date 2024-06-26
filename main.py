@@ -20,9 +20,8 @@ class Game:
         self.crosshair = p.image.load("resource/cr.png")
         self.crosshairBox = self.crosshair.get_rect()
 
-        self.manche = 1
-
         # setup enemi
+        self.manche = 1
         self.ennemiList = []
         self.ennemiHitBox = []
 
@@ -80,13 +79,23 @@ class Game:
         # Game options
         if keys[p.K_r] and self.player.isAlive == False:
             # Restart
-            print("restart")
             self.restart()
         elif keys[p.K_ESCAPE]:
             # Leave Game
             self.state = 0
 
-    def spawnBot(self,n):
+    def spawnBot(self, n: int) -> None:
+        """
+        Attempt to spawn or update and draw bots.
+
+        Parameters
+        ----------
+        n: number of bots to generate
+
+        Note
+        ----
+        Bots only spawn when there is no more bot actually
+        """
         width = self.screen.get_width()
         height = self.screen.get_height()
         ### bot making
@@ -94,16 +103,19 @@ class Game:
 
         if nbrEnnemi <= 0:
             for x in range(n):
+                # Random coordinate for the new bot
                 randomX = randint(0, width)
                 randomY = randint(-20, 0) or randint(480, 500)
                 
-                n = Bot()
-                n.hitBox.centerx = randomX
-                n.hitBox.centery = randomY
-                ### BotFamily
-                self.ennemiHitBox.append(n.hitBox)
-                self.ennemiList.append(n)
+                b = Bot()
+                b.hitBox.centerx = randomX
+                b.hitBox.centery = randomY
+
+                # Insert new bot into the game
+                self.ennemiHitBox.append(b.hitBox)
+                self.ennemiList.append(b)
                 self.manche += 1
+
         ### bot spawning + move
         else:
             for bot in self.ennemiList:
@@ -157,7 +169,20 @@ class Game:
             # Delete bots
             self.deleteAllBot()
 
-    def getRotateAngle(self, x, y):
+    @staticmethod
+    def getRotateAngle(x: float, y: float):
+        """
+        Get angle between two coordinates.
+        
+        Parameters:
+        -----------
+        x: Difference in x
+        y: Difference in y
+
+        Return:
+        -------
+        The angle in degree founded
+        """
         angleRadian = math.atan2(y, x)
         angleDegree = angleRadian * (180/math.pi)
         angleDegree *= -1
@@ -174,7 +199,6 @@ class Game:
         self.crosshairBox.centery = self.mouseY
 
         self.player.angle = self.getRotateAngle(self.mouseX - self.player.hitBox.centerx, self.mouseY - self.player.hitBox.centery)
-        print(f"L angle est : {self.player.angle}") # FIXME: This is just for player angle debugging
 
         p.mouse.set_visible(False)
 
@@ -197,11 +221,12 @@ class Game:
             self.drawScreen()
             self.updateScreen()
 
-pygame.init()
-pygame.mixer.init()
+if __name__ == '__main__':
+    pygame.init()
+    pygame.mixer.init()
 
-game = Game()
-game.start()
-sleep(0.5)
+    game = Game()
+    game.start()
+    sleep(0.5)
 
-p.quit()
+    p.quit()
