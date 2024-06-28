@@ -1,56 +1,56 @@
 import pygame as p
+from vector import *
 
 class Player:
     def __init__(self):
         self.image = p.image.load("resource/player.png")
-        self.hitBox = self.image.get_rect() # Player position
+        self.hitBox = self.image.get_rect()
         self.soundHurt = p.mixer.Sound("sound/playerHurt.mp3")
-
-        # Direction vectors
-        self.velocityX = 0
-        self.velocityY = 0
         
-        self.hp = 20    # Player health
-        self.speed = 3
+        self.hp = 50    # Player health
+        self.speed = Vector(5, 5)
         self.isAlive = True
-        self._angle = 0.0
+        self.looking_angle = 0.0
+
+        self.forward = Vector.getforward(self.looking_angle)
+        self._position = Vector(self.hitBox.x, self.hitBox.y)
 
     def draw(self, surface):
-        #rotateImage = p.transform.rotate(self.image, 90)
-        #self.image = rotateImage
-        rotated_image = p.transform.rotate(self.image, self.angle)
-        surface.blit(rotated_image, self.hitBox)
+        rotated_image = p.transform.rotate(self.image, todegree(self.looking_angle) - 90) # Rotate the image from its center angle (current orientation-90)
+        surface.blit(rotated_image, (self.position.x, self.position.y, self.hitBox.w, self.hitBox.h))
 
     def checkIfAlive(self):
         if self.hp <=0:
             self.isAlive = False
-        else:
-            pass
 
     def doDammage(self, ennemiList):
-        # FIXME: The next code is currently useless
         self.checkIfAlive()
-
-        for x in ennemiList:
-            if self.hitBox.colliderect(x):
+        for bot in ennemiList:
+            if self.hitBox.colliderect(bot.hitBox):
                 self.soundHurt.play()
-            else:
-                pass
 
-    def move(self):
-        """Move player dependend on his directional vectors"""
-        self.hitBox.move_ip(self.velocityX*self.speed, self.velocityY*self.speed)
+    def move_forward(self, mousepos: Vector):
+        tomouse = (mousepos - self.position).get_angle()
+        self.position += self.speed * Vector.getforward(tomouse)
 
-    # Getter and setter for player angle
+    def move_backward(self, mousepos: Vector):
+        tomouse = (mousepos - self.position).get_angle()
+        self.position += -1 * self.speed * Vector.getforward(tomouse)
+
+    def move_right(self, mousepos: Vector):
+        tomouse = (mousepos - self.position).get_angle()
+        self.position += self.speed * Vector.getforward(tomouse - toradian(90))
+    
+    def move_left(self, mousepos: Vector):
+        tomouse = (mousepos - self.position).get_angle()
+        self.position += self.speed * Vector.getforward(tomouse + toradian(90))
+
     @property
-    def angle(self): return self._angle
+    def position(self): return self._position
 
-    @angle.setter
-    def angle(self, degree: float):
-        """
-        Changle player image angle
-        by setting from the top center of 
-        an imaginary circle in the image(90deg)
-        """
-        self._angle = degree - 90.0
-
+    @position.setter
+    def position(self, p: Vector):
+        """Auto update hitbox for collision detection"""
+        self._position = p
+        self.hitBox.x, self.hitBox.y = p.x, p.y
+        
