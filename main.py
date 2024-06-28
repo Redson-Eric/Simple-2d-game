@@ -1,10 +1,9 @@
 import pygame
 import pygame as p
-from time import sleep
-from random import randint
+from random import randint, uniform
 from player import Player
 from ennemi import Bot
-import math
+from vector import *
 
 class Game:
 
@@ -23,22 +22,22 @@ class Game:
         # setup enemi
         self.manche = 1
         self.ennemiList = []
-        self.ennemiHitBox = []
 
         # mouse coordinates
-        self.mouseX = 0
-        self.mouseY = 0
+        self.mousepos = Vector(*p.mouse.get_pos())
 
-        self.screen = p.display.set_mode((720,480))
+        self.screen_width = Vector(1024,780)
+        self.screen = p.display.set_mode((self.screen_width.x, self.screen_width.y))
 
         # setup dead's screen
         self.deadScreen = p.image.load("resource/dead.png")
         self.deadScreenRect = self.deadScreen.get_rect()
+        self.deadScreenRect.x = (self.screen_width.x - self.deadScreenRect.w)/2
+        self.deadScreenRect.y = (self.screen_width.y - self.deadScreenRect.h)/2
 
         # create player in the center of the screen
         self.player = Player()
-        self.player.hitBox.centerx = self.screen.get_width()/2
-        self.player.hitBox.centery = self.screen.get_height()/2
+        self.player.position = Vector(self.screen_width.x/2, self.screen_width.y/2)
 
     def keyEvent(self):
         """
@@ -48,33 +47,22 @@ class Game:
 
         # Is player actually under attack or not
         # Play sound if that is the case
-        self.player.doDammage(self.ennemiHitBox)
-        
-        # Get current screen size
-        limitWidth = self.screen.get_width()
-        limitHeight = self.screen.get_height()
+        self.player.doDammage(self.ennemiList)
 
         keys = p.key.get_pressed()
-        playerTop = self.player.hitBox.top
-        playerLeft = self.player.hitBox.left
-        playerRight = self.player.hitBox.right
-        playerBottom = self.player.hitBox.bottom
 
-        #### Y
-        if (keys[p.K_z] or keys[p.K_UP]) and playerTop>0:
-            self.player.velocityY = -1
-        elif (keys[p.K_s] or keys[p.K_DOWN]) and playerBottom<limitHeight:
-            self.player.velocityY = 1
-        else:
-            self.player.velocityY = 0
+        # Y
+        if not self.player.hitBox.colliderect(self.crosshairBox):
+            if (keys[p.K_z] or keys[p.K_UP]):
+                self.player.move_forward(self.mousepos)
+            elif (keys[p.K_s] or keys[p.K_DOWN]):
+                self.player.move_backward(self.mousepos)
 
-        #########X
-        if (keys[p.K_q] or keys[p.K_LEFT]) and playerLeft>0:
-            self.player.velocityX = -1
-        elif (keys[p.K_d] or keys[p.K_RIGHT]) and playerRight<limitWidth:
-            self.player.velocityX = 1
-        else:
-            self.player.velocityX = 0
+            # X
+            if (keys[p.K_q] or keys[p.K_LEFT]):
+                self.player.move_left(self.mousepos)
+            elif (keys[p.K_d] or keys[p.K_RIGHT]):
+                self.player.move_right(self.mousepos)
 
         # Game options
         if keys[p.K_r] and self.player.isAlive == False:
@@ -84,69 +72,38 @@ class Game:
             # Leave Game
             self.state = 0
 
-    def spawnBot(self, n: int) -> None:
+    def spawn_bots(self, n: int) -> None:
         """
-        Attempt to spawn or update and draw bots.
+        Spawn n bot
 
         Parameters
         ----------
         n: number of bots to generate
-
-        Note
-        ----
-        Bots only spawn when there is no more bot actually
         """
-        width = self.screen.get_width()
-        height = self.screen.get_height()
-        ### bot making
-        nbrEnnemi = len(self.ennemiList)
+        for i in range(n):
+            # Random coordinate for the new bot
+            randomX = uniform(0, self.screen_width.x)
+            randomY = uniform(-200, 0) if randint(0, 1) else randint(self.screen_width.y, self.screen_width.y + 500)
+            
+            b = Bot()
+            b.position = Vector(randomX, randomY)
 
-        if nbrEnnemi <= 0:
-            for x in range(n):
-                # Random coordinate for the new bot
-                randomX = randint(0, width)
-                randomY = randint(-20, 0) or randint(480, 500)
-                
-                b = Bot()
-                b.hitBox.centerx = randomX
-                b.hitBox.centery = randomY
-
-                # Insert new bot into the game
-                self.ennemiHitBox.append(b.hitBox)
-                self.ennemiList.append(b)
-                self.manche += 1
-
-        ### bot spawning + move
-        else:
-            for bot in self.ennemiList:
-                if bot.isAlive and self.player.isAlive:
-                    bot.draw(self.screen)
-                    bot.chase(self.player)
-                    bot.checkCollision(self.ennemiHitBox)
-                    bot.checkCollisionToPlayer(self.player)
-                    bot.move()
-
-                else:
-                    self.ennemiList.remove(bot)
-                    self.ennemiHitBox.remove(bot.hitBox)
-                    del bot
+            # Insert new bot into the game
+            self.ennemiList.append(b)
 
     def deleteAllBot(self):
-        nbr = len(self.ennemiList)
-        if nbr>0:
-            for bot in self.ennemiList:
-                self.ennemiList.remove(bot)
-                self.ennemiHitBox.remove(bot.hitBox)
-                del bot
-        else:
-            pass
+        for bot in self.ennemiList:
+            self.delete_bot(bot)
+
+    def delete_bot(self, bot: Bot):
+        self.ennemiList.remove(bot)
+        del bot
 
     def restart(self):
         self.deleteAllBot()
         self.player.isAlive = True
         self.player.hp = 20
-        self.player.hitBox.centerx = 720/2
-        self.player.hitBox.centery = 480/2
+        self.player.position = self.screen_width/2
 
     def drawScreen(self):
         """
@@ -154,55 +111,56 @@ class Game:
         And update player and bots
         """
 
+        
+
+        # attempt to spawn or move bots
+        self.spawnBot(20)
+
+        
+        if (self.player.isAlive == False):
+    
+            # Delete bots
+            self.deleteAllBot()
+
+    def draw(self):
         # Draw player
         self.screen.fill((0,0,0))
         self.player.draw(self.screen)
         self.screen.blit(self.crosshair, self.crosshairBox)
 
-        # Update player and attempt to spawn or move bots
-        self.player.move()
-        self.spawnBot(8)
-
         # Draw dead screen when player deads
-        if (self.player.isAlive == False):
+        if not self.player.isAlive:
+            self.screen.fill((0, 0, 0))
             self.screen.blit(self.deadScreen, self.deadScreenRect)
-            # Delete bots
-            self.deleteAllBot()
+        else:
+            for bot in self.ennemiList:
+                if bot.isAlive: bot.draw(self.screen)
 
-    @staticmethod
-    def getRotateAngle(x: float, y: float):
-        """
-        Get angle between two coordinates.
-        
-        Parameters:
-        -----------
-        x: Difference in x
-        y: Difference in y
-
-        Return:
-        -------
-        The angle in degree founded
-        """
-        angleRadian = math.atan2(y, x)
-        angleDegree = angleRadian * (180/math.pi)
-        angleDegree *= -1
-        return angleDegree
-    
-    def updateScreen(self):
-        """Update: screen and player angle"""
         p.display.flip()
-        self.mouseX = p.mouse.get_pos()[0]
-        self.mouseY = p.mouse.get_pos()[1]
 
-        # update crosshair positions
-        self.crosshairBox.centerx = self.mouseX
-        self.crosshairBox.centery = self.mouseY
+    def update(self):
+        self.mousepos = Vector(*p.mouse.get_pos())
 
-        self.player.angle = self.getRotateAngle(self.mouseX - self.player.hitBox.centerx, self.mouseY - self.player.hitBox.centery)
+        # crosshair positions
+        self.crosshairBox.centerx = self.mousepos.x
+        self.crosshairBox.centery = self.mousepos.y
 
-        p.mouse.set_visible(False)
+        # Player and bots
+        if self.player.isAlive:
+            # set player angle
+            if not self.player.hitBox.colliderect(self.crosshairBox): self.player.looking_angle = (self.mousepos - Vector(self.player.hitBox.centerx, self.player.hitBox.centery)).get_angle()
 
-        self.fps.tick(60)
+            for bot in self.ennemiList:
+                if bot.isAlive:
+                    bot.chase(self.player)
+                    bot.move()
+                    bot.checkCollisionToPlayer(self.player)
+                    bot.checkCollision(self.ennemiList)
+                else: self.delete_bot(bot)
+
+        else: self.deleteAllBot()
+
+        if len(self.ennemiList) == 0 and self.player.isAlive: self.spawn_bots(20)
 
     def start(self):
         """
@@ -217,9 +175,11 @@ class Game:
                 else:
                     continue
 
+            self.draw()
             self.keyEvent()
-            self.drawScreen()
-            self.updateScreen()
+            self.update()
+            p.mouse.set_visible(False)
+            self.fps.tick(60)
 
 if __name__ == '__main__':
     pygame.init()
@@ -227,6 +187,5 @@ if __name__ == '__main__':
 
     game = Game()
     game.start()
-    sleep(0.5)
 
     p.quit()

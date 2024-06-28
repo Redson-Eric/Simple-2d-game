@@ -1,60 +1,39 @@
 import pygame as p
 from player import Player
+from random import uniform
+from vector import Vector, todegree
 
 class Bot:
     def __init__(self):
         self.image = p.image.load("resource/ennemi.png")
-        self.hitBox = self.image.get_rect() # Bot coordinate
+        self.hitBox = self.image.get_rect()
         self.deathSound = p.mixer.Sound("sound/explosion.wav")
         self.isAlive = True
 
-        # Directional Vector
-        self.velocityX = 0
-        self.velocityY = 0
-
-        self.lastX = 0
-        self.lastY = 0
-        self.speed = 1
+        self.speed = uniform(1.36, 2.3) # m/s
         self.hp = 10
         self.damage = 10
-        self._orientation = 0.0 # Angle (in degree) in which this bot currently looking for
 
+        self._orientation = 0.0 # Angle (in radian) in which this bot currently looking for
+        self.forward = Vector.getforward(self.orientation)
+        self._position = Vector(self.hitBox.x, self.hitBox.y)
 
-    def draw(self, surface):
+    def draw(self, surface: p.Surface):
         surface.blit(
-            p.transform.rotate(self.image, self.orientation),
-            self.hitBox
+            p.transform.rotate(self.image, todegree(self.orientation) - 90),
+            (self.position.x, self.position.y, self.hitBox.w, self.hitBox.h)
         )
 
-    def chase(self, target):
-        """Control bot directional vector to face the target (Player)"""
-
-        #target.hitBox.centerX ------ target.hitBox.CenterY
-        targetX = target.hitBox.centerx
-        targetY = target.hitBox.centery
-
-        #Y
-        if self.hitBox.centery > targetY:
-            self.velocityY = -1
-        elif self.hitBox.centery < targetY:
-            self.velocityY = 1
-        else:
-            self.velocityY = 0
-        #X
-        if self.hitBox.centerx > targetX:
-            self.velocityX = -1
-        elif self.hitBox.centerx < targetX:
-            self.velocityX = 1
-        else:
-            self.velocityX = 0
+    def chase(self, target: Player):
+        """Control bot forward vector to face the target (Player)"""
 
         # Make bot face the target
-        from main import Game
-        self.orientation = Game.getRotateAngle(targetX-self.hitBox.centerx, targetY-self.hitBox.centery) - 90
+        self.orientation = (target.position - self.position).get_angle()
+        self.forward = Vector.getforward(self.orientation)
 
     def move(self):
         """Moves the bot dependents of its directinal vector"""
-        self.hitBox.move_ip(self.velocityX * self.speed, self.velocityY * self.speed)
+        self.position += self.speed * self.forward
 
     def checkCollisionToPlayer(self, target: Player):
         """
@@ -66,7 +45,7 @@ class Bot:
             self.isAlive = False
             target.hp -= self.damage
 
-    def checkCollision(self, listRect):
+    def checkCollision(self, ennemilist: list[p.Rect]):
         """
         Check collision between themself
         and control life state
@@ -74,16 +53,13 @@ class Bot:
         Paramter:
         listRect: list of Bot's hitBox
         """
-        for x in listRect:
-            if x != self.hitBox:
-                if self.hitBox.colliderect(x):
+        for bot in ennemilist:
+            box = bot.hitBox
+            if box != self.hitBox:
+                if self.hitBox.colliderect(box):
                     self.deathSound.play()
                     self.isAlive = False
-                else:
-                    pass
-                    
-            else:
-                pass
+                    bot.isAlive = False
 
     @property
     def orientation(self): return self._orientation
@@ -98,3 +74,13 @@ class Bot:
         angle: The angle in degree in wich bot faces
         """
         self._orientation = angle
+
+    @property
+    def position(self): return self._position
+
+    @position.setter
+    def position(self, p: Vector):
+        self._position = p
+        self.hitBox.x, self.hitBox.y = p.x, p.y
+        
+
